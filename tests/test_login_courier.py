@@ -1,59 +1,94 @@
-import pytest
+import allure
 from api.courier_api import CourierAPI
-from helpers.data_helper import register_new_courier_and_return_login_password, get_courier_id
-
-
-@pytest.fixture
-def courier_for_login():
-    """Создаёт курьера и удаляет после теста"""
-    login_pass = register_new_courier_and_return_login_password()
-    yield login_pass
-    if login_pass:
-        courier_id = get_courier_id(login_pass[0], login_pass[1])
-        if courier_id:
-            CourierAPI.delete_courier(courier_id)
+from helpers.data_helper import generate_random_string, get_courier_id
 
 
 class TestLoginCourier:
-    def test_login_success(self, courier_for_login):
-        """Курьер может авторизоваться"""
-        assert len(courier_for_login) == 3
-        payload = {
-            "login": courier_for_login[0],
-            "password": courier_for_login[1]
-        }
-        response = CourierAPI.login_courier(payload)
-        assert response.status_code == 200
-        assert "id" in response.json()
+    @allure.title("Успешная авторизация курьера")
+    def test_login_success(self):
+        with allure.step("Генерация данных курьера"):
+            login = generate_random_string(10)
+            password = generate_random_string(10)
+            first_name = generate_random_string(10)
+            
+            create_payload = {
+                "login": login,
+                "password": password,
+                "firstName": first_name
+            }
+        
+        with allure.step("Создание курьера"):
+            CourierAPI.create_courier(create_payload)
+        
+        with allure.step("Авторизация курьера"):
+            login_payload = {"login": login, "password": password}
+            response = CourierAPI.login_courier(login_payload)
+        
+        with allure.step("Проверка ответа"):
+            assert response.status_code == 200
+            assert "id" in response.json()
+        
+        with allure.step("Очистка: удаление курьера"):
+            courier_id = get_courier_id(login, password)
+            if courier_id:
+                CourierAPI.delete_courier(courier_id)
 
+    @allure.title("Авторизация без логина")
     def test_login_without_login(self):
-        """Если нет логина, запрос возвращает ошибку"""
-        payload = {"password": "1234"}
-        response = CourierAPI.login_courier(payload)
-        assert response.status_code == 400
-        assert response.json()["message"] == "Недостаточно данных для входа"
+        with allure.step("Отправка запроса без логина"):
+            payload = {"password": "1234"}
+            response = CourierAPI.login_courier(payload)
+        
+        with allure.step("Проверка ответа"):
+            assert response.status_code == 400
+            assert response.json()["message"] == "Недостаточно данных для входа"
 
+    @allure.title("Авторизация без пароля")
     def test_login_without_password(self):
-        """Если нет пароля, запрос возвращает ошибку"""
-        payload = {"login": "test_login"}
-        response = CourierAPI.login_courier(payload)
-        assert response.status_code == 400
-        assert response.json()["message"] == "Недостаточно данных для входа"
+        with allure.step("Отправка запроса без пароля"):
+            payload = {"login": "test_login"}
+            response = CourierAPI.login_courier(payload)
+        
+        with allure.step("Проверка ответа"):
+            assert response.status_code == 400
+            assert response.json()["message"] == "Недостаточно данных для входа"
 
+    @allure.title("Авторизация с несуществующим пользователем")
     def test_login_nonexistent_user(self):
-        """Авторизация с несуществующим пользователем"""
-        payload = {"login": "nonexistent", "password": "wrong"}
-        response = CourierAPI.login_courier(payload)
-        assert response.status_code == 404
-        assert response.json()["message"] == "Учетная запись не найдена"
+        with allure.step("Отправка запроса с несуществующим логином"):
+            payload = {"login": "nonexistent", "password": "wrong"}
+            response = CourierAPI.login_courier(payload)
+        
+        with allure.step("Проверка ответа"):
+            assert response.status_code == 404
+            assert response.json()["message"] == "Учетная запись не найдена"
 
-    def test_login_wrong_password(self, courier_for_login):
-        """Авторизация с неправильным паролем"""
-        assert len(courier_for_login) == 3
-        payload = {
-            "login": courier_for_login[0],
-            "password": "wrong_password"
-        }
-        response = CourierAPI.login_courier(payload)
-        assert response.status_code == 404
-        assert response.json()["message"] == "Учетная запись не найдена"
+    @allure.title("Авторизация с неправильным паролем")
+    def test_login_wrong_password(self):
+        with allure.step("Генерация данных курьера"):
+            login = generate_random_string(10)
+            password = generate_random_string(10)
+            first_name = generate_random_string(10)
+            
+            create_payload = {
+                "login": login,
+                "password": password,
+                "firstName": first_name
+            }
+        
+        with allure.step("Создание курьера"):
+            CourierAPI.create_courier(create_payload)
+        
+        with allure.step("Авторизация с неправильным паролем"):
+            login_payload = {"login": login, "password": "wrong_password"}
+            response = CourierAPI.login_courier(login_payload)
+        
+        with allure.step("Проверка ответа"):
+            assert response.status_code == 404
+            assert response.json()["message"] == "Учетная запись не найдена"
+        
+        with allure.step("Очистка: удаление курьера"):
+            courier_id = get_courier_id(login, password)
+            if courier_id:
+                CourierAPI.delete_courier(courier_id)
+                

@@ -1,20 +1,19 @@
 import requests
+from constants import COURIER_URL, LOGIN_URL
 
 
 class CourierAPI:
-    BASE_URL = "https://qa-scooter.praktikum-services.ru/api/v1/courier"
-
     @staticmethod
     def create_courier(payload):
         """Создание курьера"""
-        return requests.post(CourierAPI.BASE_URL, data=payload)
+        return requests.post(COURIER_URL, data=payload)
 
     @staticmethod
     def login_courier(payload):
         """Логин курьера"""
-        return requests.post(f"{CourierAPI.BASE_URL}/login", data=payload)
-    
+        return requests.post(LOGIN_URL, data=payload)
+
     @staticmethod
     def delete_courier(courier_id):
         """Удаление курьера"""
-        return requests.delete(f"{CourierAPI.BASE_URL}/{courier_id}")
+        return requests.delete(f"{COURIER_URL}/{courier_id}")
