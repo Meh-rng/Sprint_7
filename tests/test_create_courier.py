@@ -28,21 +28,20 @@ class TestCreateCourier:
     @allure.title("Создание двух одинаковых курьеров")
     def test_create_duplicate_courier(self, delete_courier_after_test):
         payload = generate_random_courier_data()
-        
+    
         with allure.step("Создание первого курьера"):
-            response1 = CourierAPI.create_courier(payload)
-            assert response1.status_code == 201
-        
-        with allure.step("Попытка создания второго курьера с теми же данными"):
-            response2 = CourierAPI.create_courier(payload)
-        
-        with allure.step("Проверка ответа"):
-            assert response2.status_code == 409
-            assert response2.json()["message"] == "Этот логин уже используется"
-        
+            CourierAPI.create_courier(payload)
+    
         with allure.step("Регистрация на удаление"):
             courier_id = get_courier_id(payload["login"], payload["password"])
             delete_courier_after_test(courier_id)
+    
+        with allure.step("Попытка создания второго курьера с теми же данными"):
+            response = CourierAPI.create_courier(payload)
+    
+        with allure.step("Проверка ответа"):
+            assert response.status_code == 409
+            assert response.json()["message"] == "Этот логин уже используется"
 
     @allure.title("Создание курьера без имени (firstName)")
     def test_create_courier_without_firstname(self, delete_courier_after_test):

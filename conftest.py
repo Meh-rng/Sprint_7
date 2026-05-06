@@ -1,7 +1,7 @@
 import pytest
 from api.courier_api import CourierAPI
-
-
+from helpers.data_helper import generate_random_courier_data
+from helpers.data_helper import get_courier_id
 @pytest.fixture
 def delete_courier_after_test():
     """Фикстура для удаления курьера после теста"""
@@ -20,11 +20,10 @@ def delete_courier_after_test():
 @pytest.fixture
 def created_courier(delete_courier_after_test):
     """Создаёт курьера и регистрирует на удаление"""
-    from helpers.data_helper import generate_random_courier_data
+    
     payload = generate_random_courier_data()
     CourierAPI.create_courier(payload)
     
-    from helpers.data_helper import get_courier_id
     courier_id = get_courier_id(payload["login"], payload["password"])
     delete_courier_after_test(courier_id)
     
