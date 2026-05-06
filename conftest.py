@@ -1,67 +1,31 @@
 import pytest
 from api.courier_api import CourierAPI
-from helpers.data_helper import get_courier_id, generate_random_string
 
 
 @pytest.fixture
-def random_courier_data():
-    """Генерирует случайные данные для курьера (без регистрации)"""
-    login = generate_random_string(10)
-    password = generate_random_string(10)
-    first_name = generate_random_string(10)
-    return {
-        "login": login,
-        "password": password,
-        "firstName": first_name
-    }
-
-
-@pytest.fixture
-def created_courier():
-    """Создаёт курьера и удаляет после теста (даже при падении)"""
-    login = generate_random_string(10)
-    password = generate_random_string(10)
-    first_name = generate_random_string(10)
+def delete_courier_after_test():
+    """Фикстура для удаления курьера после теста"""
+    courier_ids = []
     
-    payload = {
-        "login": login,
-        "password": password,
-        "firstName": first_name
-    }
+    def register_for_deletion(courier_id):
+        if courier_id:
+            courier_ids.append(courier_id)
     
-    CourierAPI.create_courier(payload)
+    yield register_for_deletion
     
-    yield {
-        "login": login,
-        "password": password,
-        "firstName": first_name
-    }
-    
-    # Очистка выполняется всегда
-    courier_id = get_courier_id(login, password)
-    if courier_id:
+    for courier_id in courier_ids:
         CourierAPI.delete_courier(courier_id)
 
-@pytest.fixture
 
-def courier_without_firstname():
-    """Создаёт курьера без имени и удаляет после теста"""
-    login = generate_random_string(10)
-    password = generate_random_string(10)
-    
-    payload = {
-        "login": login,
-        "password": password
-    }
-    
+@pytest.fixture
+def created_courier(delete_courier_after_test):
+    """Создаёт курьера и регистрирует на удаление"""
+    from helpers.data_helper import generate_random_courier_data
+    payload = generate_random_courier_data()
     CourierAPI.create_courier(payload)
     
-    yield {
-        "login": login,
-        "password": password
-    }
+    from helpers.data_helper import get_courier_id
+    courier_id = get_courier_id(payload["login"], payload["password"])
+    delete_courier_after_test(courier_id)
     
-    courier_id = get_courier_id(login, password)
-    if courier_id:
-        CourierAPI.delete_courier(courier_id)
-        
+    return payload
